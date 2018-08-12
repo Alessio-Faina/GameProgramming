@@ -5,6 +5,7 @@ Game::Game()
 	, mRenderer(nullptr)
 	, mTicksCount(0)
 	, mIsRunning(true)
+	, mEndGameWait(true)
 {
 
 }
@@ -110,7 +111,6 @@ bool Game::Initialize()
 	mWallBottom.h = WALL_THICKNESS;
 	mWallBottom.w = WINDOW_WIDTH;
 
-
 	return true;
 }
 
@@ -121,6 +121,10 @@ void Game::RunLoop()
 		ProcessInput();
 		UpdateGame();
 		GenerateOutput();
+	}
+	while (mEndGameWait)
+	{
+		ProcessInput();
 	}
 }
 
@@ -145,6 +149,7 @@ void Game::ProcessInput()
 		{
 			case SDL_QUIT:
 				mIsRunning = false;
+				mEndGameWait = false;
 				return;
 		}
 	}
@@ -153,27 +158,31 @@ void Game::ProcessInput()
 	if (keybState[SDL_SCANCODE_ESCAPE])
 	{
 		mIsRunning = false;
+		mEndGameWait = false;
 		return;
 	}
 
-	mPaddleDirLeft = 0;
-	if (keybState[SDL_SCANCODE_W])
+	if (mIsRunning)
 	{
-		mPaddleDirLeft -= 1;
-	}
-	if (keybState[SDL_SCANCODE_S])
-	{
-		mPaddleDirLeft += 1;
-	}
+		mPaddleDirLeft = 0;
+		if (keybState[SDL_SCANCODE_W])
+		{
+			mPaddleDirLeft -= 1;
+		}
+		if (keybState[SDL_SCANCODE_S])
+		{
+			mPaddleDirLeft += 1;
+		}
 
-	mPaddleDirRight = 0;
-	if (keybState[SDL_SCANCODE_I])
-	{
-		mPaddleDirRight -= 1;
-	}
-	if (keybState[SDL_SCANCODE_K])
-	{
-		mPaddleDirRight += 1;
+		mPaddleDirRight = 0;
+		if (keybState[SDL_SCANCODE_I])
+		{
+			mPaddleDirRight -= 1;
+		}
+		if (keybState[SDL_SCANCODE_K])
+		{
+			mPaddleDirRight += 1;
+		}
 	}
 }
 

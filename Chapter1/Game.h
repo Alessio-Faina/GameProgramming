@@ -71,6 +71,7 @@ private:
 	Uint32 mTicksCount;
 
 	bool mIsRunning;
+	bool mEndGameWait;
 
 	int mPaddleDirLeft;
 	int mPaddleDirRight;
