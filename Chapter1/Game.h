@@ -2,6 +2,8 @@
 
 #include "SDL/SDL.h"
 #include <vector>
+#include <cstdlib>
+#include <time.h>
 
 #define WINDOW_WIDTH	1024
 #define WINDOW_HEIGHT	768
@@ -24,6 +26,7 @@ struct Ball
 {
 	Vector2 ballPos;
 	Vector2 ballSpeed;
+	bool isBallDead;
 };
 
 class Game
@@ -37,7 +40,7 @@ public:
 	void Shutdown();
 
 private:
-	void InitBall();
+	void InitBall(Ball* ball);
 	void InitBalls();
 	void ProcessInput();
 	void UpdateGame();

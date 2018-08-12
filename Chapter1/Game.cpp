@@ -14,23 +14,33 @@ Game::~Game()
 {
 }
 
+void Game::InitBall(Ball* ball)
+{
+	int diff = rand() % 20 - 10;
+	int xSpeed = rand() % 2 + 1;
+	int ySpeed = rand() % 2 + 1;
+	ball->ballPos.x = WINDOW_WIDTH / 2.0f + 10 * diff;
+	ball->ballPos.y = WINDOW_HEIGHT / 2.0f + 10 * diff;
+	ball->ballSpeed.x = -350.0f * (xSpeed == 2 ? -1 : 1) + 10 * diff;
+	ball->ballSpeed.y = 375.0f * (ySpeed == 2 ? -1 : 1) + 10 * diff;
+	ball->isBallDead = false;
+}
+
 void Game::InitBalls()
 {
-	mRunningBalls = 3;
+	mRunningBalls = 2;
 
 	Ball temp;
 	for (int i = 0; i < mRunningBalls; i++)
 	{
-		temp.ballPos.x = WINDOW_WIDTH / 2.0f + 10 * i;
-		temp.ballPos.y = WINDOW_HEIGHT / 2.0f + 10 * i;;
-		temp.ballSpeed.x = -400.0f;
-		temp.ballSpeed.y = 435.0f;
+		InitBall(&temp);
 		mBalls.push_back(temp);
 	}
 }
 
 bool Game::Initialize()
 {
+	srand(time(NULL));
 	int sdlResult = SDL_Init(SDL_INIT_VIDEO);
 	if (sdlResult != 0)
 	{
@@ -169,6 +179,10 @@ void Game::movePaddle(int paddleDir, Vector2* paddlePos,
 
 void Game::checkCollisionLeft(Ball* ball)
 {
+	if (ball->isBallDead)
+	{
+		return;
+	}
 	float diff = ball->ballPos.y - mPaddlePosLeft.y;
 	if ((diff <= PADDLE_THICKNESS_H && diff > (-BALL_THICKNESS / 2)) &&
 		(ball->ballPos.x <= 25.0f) &&
@@ -177,15 +191,20 @@ void Game::checkCollisionLeft(Ball* ball)
 	{
 		ball->ballSpeed.x *= -1;
 	}
-	if (ball->ballPos.x < 0.0f && mRunningBalls < 1)
+	if (ball->ballPos.x < 0.0f )
 	{
-		mIsRunning = false;
+		ball->isBallDead = true;
+		mRunningBalls--;
 	}
-	mRunningBalls--;
+
 }
 
 void Game::checkCollisionRight(Ball* ball)
 {
+	if (ball->isBallDead)
+	{
+		return;
+	}
 	float diff = ball->ballPos.y - mPaddlePosRight.y;
 	if ((diff <= PADDLE_THICKNESS_H && diff >(-BALL_THICKNESS / 2)) &&
 		(ball->ballPos.x >= WINDOW_WIDTH - 25.0f) &&
@@ -194,11 +213,11 @@ void Game::checkCollisionRight(Ball* ball)
 	{
 		ball->ballSpeed.x *= -1;
 	}
-	if (ball->ballPos.x > WINDOW_WIDTH && mRunningBalls < 1)
+	if (ball->ballPos.x > WINDOW_WIDTH)
 	{
-		mIsRunning = false;
+		ball->isBallDead = true;
+		mRunningBalls--;
 	}
-	mRunningBalls--;
 }
 
 void Game::moveBall(Ball* ball, float deltaTime)
@@ -250,6 +269,10 @@ void Game::UpdateGame()
 		checkCollisionLeft(&(*it));
 		checkCollisionRight(&(*it));
 	}
+	if(mRunningBalls <= 0)
+	{
+		mIsRunning = false;
+	}
 }
 
 void Game::GenerateOutput()
@@ -269,9 +292,12 @@ void Game::GenerateOutput()
 	};
 	for (std::vector<Ball>::iterator it = mBalls.begin(); it != mBalls.end(); ++it)
 	{
-		movingObjects.x = static_cast<int>(it->ballPos.x);
-		movingObjects.y = static_cast<int>(it->ballPos.y);
-		SDL_RenderFillRect(mRenderer, &movingObjects);
+		if (!it->isBallDead)
+		{
+			movingObjects.x = static_cast<int>(it->ballPos.x);
+			movingObjects.y = static_cast<int>(it->ballPos.y);
+			SDL_RenderFillRect(mRenderer, &movingObjects);
+		}
 	}
 
 	movingObjects.x = static_cast<int>(mPaddlePosLeft.x);
