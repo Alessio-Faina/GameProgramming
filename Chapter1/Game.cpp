@@ -65,6 +65,18 @@ bool Game::Initialize()
 		SDL_Log("[%s:%i - Can't create SDL Renderer!: ", __FUNCTION__, __LINE__, SDL_GetError());
 		return false;
 	}
+	if (TTF_Init() < 0)
+	{
+		const char* temp = SDL_GetError();
+		SDL_Log("[%s:%i - Can't create SDL Renderer!: ", __FUNCTION__, __LINE__, temp);
+		return false;
+	}
+	mFont = TTF_OpenFont(WINDOWS_FONTS_FOLDER, FONT_THICKNESS);
+	if (!mFont)
+	{
+		const char* temp = SDL_GetError();
+		SDL_Log("[%s:%i - Can't create SDL font: ", __FUNCTION__, __LINE__, temp);
+	}
 
 	mPaddlePosLeft.x = 10.0f;
 	mPaddlePosLeft.y = WINDOW_HEIGHT / 2.0f;
@@ -72,6 +84,8 @@ bool Game::Initialize()
 	mPaddlePosRight.x = WINDOW_WIDTH - PADDLE_THICKNESS_W - 10.0f;
 	mPaddlePosRight.y = WINDOW_HEIGHT / 2.0f;
 
+	mPlayerLeftScore = 0;
+	mPlayerRightScore = 0;
 	InitBalls();
 	/*
 	mBallPos.x = WINDOW_WIDTH / 2.0f;
@@ -112,6 +126,11 @@ void Game::RunLoop()
 
 void Game::Shutdown()
 {
+	if (mFont)
+	{
+		TTF_CloseFont(mFont);
+	}
+	TTF_Quit();
 	SDL_DestroyRenderer(mRenderer);
 	SDL_DestroyWindow(mWindow);
 	SDL_Quit();
@@ -193,6 +212,7 @@ void Game::checkCollisionLeft(Ball* ball)
 	}
 	if (ball->ballPos.x < 0.0f )
 	{
+		mPlayerRightScore++;
 		ball->isBallDead = true;
 		mRunningBalls--;
 	}
@@ -215,6 +235,7 @@ void Game::checkCollisionRight(Ball* ball)
 	}
 	if (ball->ballPos.x > WINDOW_WIDTH)
 	{
+		mPlayerLeftScore++;
 		ball->isBallDead = true;
 		mRunningBalls--;
 	}
@@ -275,6 +296,53 @@ void Game::UpdateGame()
 	}
 }
 
+void Game::writeScore(int playerScore, enum PlayerSide side)
+{
+	if (!mFont)
+	{
+		return;
+	}
+	std::string ply = "1: ";
+	if (side == Right)
+	{
+		ply = "2: ";
+	}
+	std::string score_text = "Player " + ply + std::to_string(playerScore);
+	SDL_Color textColor = { 255, 0, 0, 0 };
+	SDL_Surface* textSurface = TTF_RenderText_Solid(mFont,
+		score_text.c_str(), textColor);
+	if (!textSurface)
+	{
+		const char* temp = SDL_GetError();
+		SDL_Log("[%s:%i - Can't create SDL textSurface: ", __FUNCTION__, __LINE__, temp);
+		return;
+	}
+	SDL_Texture* text = SDL_CreateTextureFromSurface(mRenderer, textSurface);
+	if (!text)
+	{
+		const char* temp = SDL_GetError();
+		SDL_Log("[%s:%i - Can't create SDL text: ", __FUNCTION__, __LINE__, temp);
+		SDL_FreeSurface(textSurface);
+		return;
+	}
+	int text_width = textSurface->w;
+	int text_height = textSurface->h;
+	SDL_FreeSurface(textSurface);
+	SDL_Rect renderQuad = { 20, 50, text_width, text_height };
+	if (side == Left)
+	{
+		renderQuad.x = 20;
+		renderQuad.y = 0;
+	}
+	else
+	{
+		renderQuad.x = WINDOW_WIDTH - 100;
+		renderQuad.y = 0;
+	}
+	SDL_RenderCopy(mRenderer, text, NULL, &renderQuad);
+	SDL_DestroyTexture(text);
+}
+
 void Game::GenerateOutput()
 {
 	SDL_SetRenderDrawColor(mRenderer, 0, 0, 255, 255);
@@ -310,6 +378,9 @@ void Game::GenerateOutput()
 	movingObjects.y = static_cast<int>(mPaddlePosRight.y);
 	SDL_RenderFillRect(mRenderer, &movingObjects);
 
+	writeScore(mPlayerLeftScore, Left);
+	writeScore(mPlayerRightScore, Right);
+	
 	SDL_RenderPresent(mRenderer);
 }
 
